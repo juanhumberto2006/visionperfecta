@@ -1,0 +1,17 @@
+vendor/
+node_modules/
+npm-debug.log
+yarn-error.log
+.git/
+.gitignore
+.env
+.env.local
+.env.*.local
+*.log
+storage/*.key
+.phpunit.cache/
+vendor/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

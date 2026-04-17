@@ -1,19 +1,28 @@
 #!/bin/bash
 
+echo "=========================================="
+echo "VisionPerfecta - Starting Application"
+echo "=========================================="
+
 # Install dependencies if needed
-composer install --no-dev --optimize-autoloader
+echo "Installing composer dependencies..."
+composer install --no-dev --optimize-autoloader --no-interaction
 
 # Run migrations
-php artisan migrate --force
+echo "Running migrations..."
+php artisan migrate --force --no-interaction
 
 # Clear and cache
+echo "Clearing caches..."
 php artisan config:clear
 php artisan route:clear
 php artisan view:clear
 php artisan cache:clear
+php artisan optimize
 
-# Build assets (if needed)
-npm run build
+# Set permissions
+chmod -R 755 storage bootstrap/cache
 
 # Start the server
-php artisan serve --host=0.0.0.0 --port=$PORT
+echo "Starting server on port $PORT..."
+php artisan serve --host=0.0.0.0 --port=${PORT:-8000}

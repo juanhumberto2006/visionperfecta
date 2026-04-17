@@ -1,3 +1,7 @@
+# ============================================
+# VisionPerfecta - Laravel Docker Image
+# ============================================
+
 FROM php:8.2-fpm
 
 # Install system dependencies
@@ -27,7 +31,7 @@ WORKDIR /var/www
 COPY composer.json composer.lock ./
 
 # Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
 
 # Copy application files
 COPY . .
@@ -35,9 +39,10 @@ COPY . .
 # Set permissions
 RUN chown -R www-data:www-data /var/www \
     && chmod -R 755 /var/www/storage \
-    && chmod -R 755 /var/www/bootstrap/cache
+    && chmod -R 755 /var/www/bootstrap/cache \
+    && chmod +x /var/www/start.sh
 
 # Expose port 9000
 EXPOSE 9000
 
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=9000"]
+CMD ["/var/www/start.sh"]
