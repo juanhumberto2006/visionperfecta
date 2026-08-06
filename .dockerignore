@@ -1,16 +1,40 @@
-vendor/
-node_modules/
-npm-debug.log
-yarn-error.log
+# Git
 .git/
 .gitignore
+
+# Environment
 .env
 .env.local
+.env.production
 .env.*.local
-*.log
-storage/*.key
-.phpunit.cache/
+
+# PHP dependencies
 vendor/
+
+# Node dependencies
+node_modules/
+
+# Build artifacts
+/public/build
+/public/hot
+
+# Logs and caches
+*.log
+.phpunit.cache/
+.phpunit.result.cache
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+
+# IDE
+/.idea
+/.vscode
+/.fleet
+/.nova
+/.zed
+
+# OS files
 .DS_Store
 Thumbs.db
 *.swp

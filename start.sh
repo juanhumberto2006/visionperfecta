@@ -1,16 +1,36 @@
 #!/bin/bash
+set -e
 
 echo "=========================================="
 echo "VisionPerfecta - Starting Application"
 echo "=========================================="
 
-# Install dependencies if needed
-echo "Installing composer dependencies..."
-composer install --no-dev --optimize-autoloader --no-interaction
+cd /var/www
 
-# Run migrations
+# Create .env from example if it does not exist
+if [ ! -f .env ]; then
+    echo "Creating .env from example..."
+    cp .env.example .env
+fi
+
+# Generate application key if missing
+if [ -z "$APP_KEY" ] && ! grep -q "^APP_KEY=base64:" .env; then
+    echo "Generating application key..."
+    php artisan key:generate --force --no-interaction
+fi
+
+# Storage link
+php artisan storage:link --force --no-interaction || true
+
+# Run migrations (with retries in case the DB is not ready yet)
 echo "Running migrations..."
-php artisan migrate --force --no-interaction
+for i in 1 2 3 4 5; do
+    if php artisan migrate --force --no-interaction; then
+        break
+    fi
+    echo "Migration failed, retrying in 10s (attempt $i/5)..."
+    sleep 10
+done
 
 # Clear and cache
 echo "Clearing caches..."
@@ -21,8 +41,9 @@ php artisan cache:clear
 php artisan optimize
 
 # Set permissions
-chmod -R 755 storage bootstrap/cache
+chmod -R 775 storage bootstrap/cache
 
 # Start the server
+PORT="${PORT:-8000}"
 echo "Starting server on port $PORT..."
-php artisan serve --host=0.0.0.0 --port=${PORT:-8000}
+exec php artisan serve --host=0.0.0.0 --port="$PORT"
