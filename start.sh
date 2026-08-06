@@ -19,17 +19,54 @@ if [ -z "$APP_KEY" ] && ! grep -q "^APP_KEY=base64:" .env; then
     php artisan key:generate --force --no-interaction
 fi
 
+# Wait for the database and create it if it does not exist
+echo "Checking database connection..."
+DB_CREATED=0
+for i in 1 2 3 4 5; do
+    if php <<'PHP'
+<?php
+$opts = [];
+if ($ca = getenv('MYSQL_ATTR_SSL_CA')) {
+    $opts[PDO::MYSQL_ATTR_SSL_CA] = $ca;
+}
+$pdo = new PDO(
+    'mysql:host=' . getenv('DB_HOST') . ';port=' . getenv('DB_PORT'),
+    getenv('DB_USERNAME'),
+    getenv('DB_PASSWORD'),
+    $opts
+);
+$pdo->exec('CREATE DATABASE IF NOT EXISTS `' . getenv('DB_DATABASE') . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+echo "Database ready.\n";
+PHP
+    then
+        DB_CREATED=1
+        break
+    fi
+    echo "Database not ready yet, retrying in 10s (attempt $i/5)..."
+    sleep 10
+done
+
+if [ "$DB_CREATED" != "1" ]; then
+    echo "ERROR: Could not connect to the database. Check DB_HOST, DB_PORT, DB_USERNAME and DB_PASSWORD."
+    exit 1
+fi
+
 # Storage link
 php artisan storage:link --force --no-interaction || true
 
-# Run migrations (with retries in case the DB is not ready yet)
+# Run migrations (fail if they cannot run after retries)
 echo "Running migrations..."
 for i in 1 2 3 4 5; do
     if php artisan migrate --force --no-interaction; then
         break
     fi
-    echo "Migration failed, retrying in 10s (attempt $i/5)..."
-    sleep 10
+    if [ "$i" -lt 5 ]; then
+        echo "Migration failed, retrying in 10s (attempt $i/5)..."
+        sleep 10
+    else
+        echo "ERROR: Migrations failed after 5 attempts."
+        exit 1
+    fi
 done
 
 # Clear and cache
